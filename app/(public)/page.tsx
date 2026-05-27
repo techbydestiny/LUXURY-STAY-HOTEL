@@ -9,6 +9,7 @@ import { useConfig } from '@/lib/hooks/useConfig';
 import { RoomCard } from '@/components/rooms/RoomCard';
 import { Button } from '@/components/ui/Button';
 import { ImageSlider } from '@/components/ui/ImageSlider';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Head from 'next/head';
 
@@ -22,15 +23,6 @@ const ArrowRightIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="5" y1="12" x2="19" y2="12"/>
     <polyline points="12 5 19 12 12 19"/>
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-    <line x1="16" y1="2" x2="16" y2="6"/>
-    <line x1="8" y1="2" x2="8" y2="6"/>
-    <line x1="3" y1="10" x2="21" y2="10"/>
   </svg>
 );
 
@@ -67,6 +59,13 @@ const StarIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8"/>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+
 const AnimatedSection = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
@@ -80,6 +79,92 @@ const AnimatedSection = ({ children, className = "" }: { children: React.ReactNo
     >
       {children}
     </motion.div>
+  );
+};
+
+// Search Widget Component - Properly positioned
+const SearchWidget = () => {
+  const router = useRouter();
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState(1);
+  const [error, setError] = useState('');
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkIn || !checkOut) {
+      setError('Please select both check-in and check-out dates');
+      return;
+    }
+    
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    
+    if (checkOutDate <= checkInDate) {
+      setError('Check-out date must be after check-in date');
+      return;
+    }
+    
+    setError('');
+    router.push(`/search?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}`);
+  };
+
+  return (
+    <div className="relative z-20 px-4" style={{ marginTop: '-60px' }}>
+      <div className="max-w-5xl mx-auto">
+        <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-2xl p-4 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Check In</label>
+              <input
+                type="date"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                min={today}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Check Out</label>
+              <input
+                type="date"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={checkIn || today}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Guests</label>
+              <select
+                value={guests}
+                onChange={(e) => setGuests(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-gray-700"
+              >
+                {[1, 2, 3, 4, 5, 6].map(num => (
+                  <option key={num} value={num}>{num} {num === 1 ? 'Guest' : 'Guests'}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                className="w-full py-2 rounded-lg text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#3B82F6' }}
+              >
+                <SearchIcon />
+                Check Availability
+              </button>
+            </div>
+          </div>
+          {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
+        </form>
+      </div>
+    </div>
   );
 };
 
@@ -172,14 +257,9 @@ export default function HomePage() {
                     <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-xl md:text-2xl text-gray-200 mb-4">{slide.subtitle}</motion.p>
                     <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-gray-300 mb-8 max-w-2xl text-lg">{slide.description}</motion.p>
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col sm:flex-row gap-4">
-                      <Link href="/booking">
-                        <button className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:scale-105 shadow-lg flex items-center gap-2" style={{ backgroundColor: primaryColor }}>
-                          Book Your Stay <ArrowRightIcon />
-                        </button>
-                      </Link>
                       <Link href="/rooms">
-                        <button className="px-8 py-3 rounded-lg font-semibold backdrop-blur-md border-2 border-white text-white transition-all hover:bg-white hover:text-gray-900">
-                          Explore Rooms
+                        <button className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:scale-105 shadow-lg flex items-center gap-2" style={{ backgroundColor: primaryColor }}>
+                          Explore Rooms <ArrowRightIcon />
                         </button>
                       </Link>
                       <a href={`tel:${contactPhone}`}>
@@ -195,6 +275,9 @@ export default function HomePage() {
           ))}
         </Swiper>
       </section>
+
+      {/* Search Widget - Placed outside hero, below it */}
+      <SearchWidget />
 
       {/* Stats Section */}
       <section className="bg-primary py-12">
@@ -252,7 +335,7 @@ export default function HomePage() {
         </AnimatedSection>
       )}
 
-      {/* Google Reviews Section */}
+      {/* Guest Reviews Section */}
       <AnimatedSection className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -350,17 +433,17 @@ export default function HomePage() {
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Experience Luxury Firsthand</h2>
             <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Discover why guests choose us for their most memorable stays. From personalized service to world-class amenities, every detail is designed for your comfort.
+              Discover why guests choose us for their most memorable stays.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/booking">
+              <Link href="/rooms">
                 <button className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:scale-105 shadow-lg flex items-center gap-2" style={{ backgroundColor: primaryColor }}>
-                  Check Availability <CalendarIcon />
+                  View Our Rooms <ArrowRightIcon />
                 </button>
               </Link>
               <a href={`tel:${contactPhone}`}>
                 <button className="px-8 py-3 rounded-lg font-semibold border-2 border-white text-white transition-all hover:bg-white hover:text-gray-900 flex items-center gap-2">
-                  Speak with Concierge <PhoneIcon />
+                  <PhoneIcon /> Speak with Concierge
                 </button>
               </a>
             </div>
